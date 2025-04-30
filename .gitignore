@@ -40,6 +40,14 @@ venv.bak/
 /*venv*/
 **/pyvenv.cfg
 
+# tokens
+
+.tokens
+.tokens/
+/*tokens*/
+.access_token_cache
+tokens.json
+.access_token_FC_Falcons_ 
 
 # VS Code and other IDEs/editors
 .vscode/
