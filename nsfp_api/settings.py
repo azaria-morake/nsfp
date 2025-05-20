@@ -3,6 +3,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 
+"""
+REST KNOX 'TOKEN_LIMIT_PER_USER == 1' invalidates old tokens on new 
+
+Effect:
+>>> New login invalidates all previous tokens.
+>>> Users can only have one active session.
+"""
+
 # Load environment variables first
 load_dotenv()
 
@@ -19,7 +27,7 @@ SECRET_KEY = 'django-insecure--k&hji-zdku+%1-a+lpk$(j&50vl_f+982m#0i%$3#j*+iop1r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -38,8 +46,9 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ]
+        'knox.auth.TokenAuthentication'],
+    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 
 MIDDLEWARE = [
@@ -89,26 +98,6 @@ DATABASES = {
 }
 
 
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -133,8 +122,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'nsfp_core.Team'  # Use custom Team model as User
 
-# Extend token litetime
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Default: 5 minutes
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Default: 1 day
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+]
+# Custom settings for Knox
+
+REST_KNOX = {
+    'TOKEN_TTL': timedelta(hours=48), # Tokens expire in 48 hours
+   # 'USER_SERIALIZER': 'nsfp_core.serializers.UserSerializer',  # Custom user serializer
+    'AUTO_REFRESH': False,#True,  # Enable auto-refresh for tokens
+    'TOKEN_LIMIT_PER_USER': 3,  # Limit to 3 active tokens per user
+    'EXPIRATION_DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',  # Custom expiration datetime format
+    'UNAUTHENTICATED_USER': None,  # Do not allow unauthenticated users
+
 }
