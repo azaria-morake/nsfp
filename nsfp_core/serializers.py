@@ -2,6 +2,10 @@
 from rest_framework import serializers
 from .models import Team
 from .utils import validate_username, validate_team_name, normalize_identifier
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+
+
 
 class TeamRegistrationSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True)
@@ -19,6 +23,15 @@ class TeamRegistrationSerializer(serializers.ModelSerializer):
         # Normalize both identifiers the same way
         base_username = normalize_identifier(data['username'])
         base_team_name = normalize_identifier(data['team_name'])
+
+                # Password validation
+        if data['password'] != data.pop('password2'):
+            raise serializers.ValidationError({"password": "Passwords do not match"})
+        
+        try:
+            validate_password(data['password'])
+        except ValidationError as e:
+            raise serializers.ValidationError({"password": e.messages})
         
         # Check against existing records
         if Team.objects.filter(canonical_username=base_username).exists():
