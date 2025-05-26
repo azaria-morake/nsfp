@@ -1,0 +1,126 @@
+# .env
+DB_NAME=nsfp_db
+DB_USER=nsfp_admin
+DB_PASSWORD=soccerpass123
+DB_HOST=localhost
+DB_PORT=5432
+
+
+1
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0NTc5OTg1MSwiaWF0IjoxNzQ1NzEzNDUxLCJqdGkiOiJhNWQ4NmY1ZTIyYzE0ZGEyYTNjYzhjY2Q5MmUxNmNjOCIsInVzZXJfaWQiOjEsInRlYW1fbmFtZSI6Ikxpb25zIEZDIn0.oHOcqXd43p0IXmT_J2EZmFczjhXkw4JgftJ3zP6dYPA",
+  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1NzEzNzUxLCJpYXQiOjE3NDU3MTM0NTEsImp0aSI6Ijc4NzUwNGEyYjcyYzQ4YzE4MTJlYjRkNzljOWM0ZjFkIiwidXNlcl9pZCI6MSwidGVhbV9uYW1lIjoiTGlvbnMgRkMifQ.QrCeeGsu3upHalXEOUzIMYde4AJRKRhP76US80h0zFo"
+
+2: Falcons
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0NjM1ODgxOCwiaWF0IjoxNzQ1NzU0MDE4LCJqdGkiOiIzYmQ1ZDIyOTc0OGU0NWI0OGQxODU3ODQ5Yzk1ODU0NSIsInVzZXJfaWQiOjIsInRlYW1fbmFtZSI6IkZDIEZhbGNvbnMifQ.78pChHwxdSa9SZ3Um2mEFm3nV0llsgl_HhWaly0Uvv8
+
+3:
+
+Team Name: Didiza FC
+✅ Logged in successfully. Access token saved for Didiza FC.
+🔁 Refresh token (save it somewhere safely!):
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0NjU1MjMzNiwiaWF0IjoxNzQ1OTQ3NTM2LCJqdGkiOiJmODI5MWZhZjU1Nzk0MTczYTdjNTQzNzE5ZjYyMmRhNiIsInVzZXJfaWQiOjMsInRlYW1fbmFtZSI6IkRpZGl6YSBGQyJ9.RUyYuXSBzOW33rnKmgY3v6fjqYC4rirYZaQuS_-9awE
+🔑 Access token (save it somewhere safely
+
+Generate a maroon soccer jersey mockup with this soccer badge. The badge should be realistic, heat  pressed and have natural colors as they would look on a real soccer jersey. Be very accurate with the  badge.
+
+Where a sponsor like adidas goes, place a logo "Wav3 World"... it must have a globe element. Be the same size as a logo of nike or adidas would take on a soccer jersey.
+
+And then the main sponsor, just simple text of 2 lines:
+
+"NSFP
+Super Leage"
+
+Be creative with the text, but should be a sleek logo.
+
+Got it or need more clarification before starting?
+
+
+Lions FC
+
+Save this access token for which team? Lions FC
+✅ Access token saved for Lions FC
+Refresh Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0NzgxNzQ0OCwiaWF0IjoxNzQ3MjEyNjQ4LCJqdGkiOiI5YmE1MDU2NWFiMTQ0ZjI1OWNiNTVjOWRmNTk2NDU0NyIsInVzZXJfaWQiOjEsInRlYW1fbmFtZSI6Ikxpb25zIEZDIn0.LU9OCjsAGlhvcbkYEl3pOyShbkFq3wqZQbIlcVrLCzw
+
+
+-----------------------------
+CRUD
+------------------------------
+
+# Successful registration
+curl -X POST http://localhost:8000/api/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "lion_team",
+    "team_name": "Golden Lions FC",
+    "password": "SecurePass123!",
+    "password2": "SecurePass123!",
+    "location": "Johannesburg"
+  }'
+
+# Login credentials
+curl -X POST http://localhost:8000/api/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "lion_team", "password": "SecurePass123!"}'
+
+
+# Lofout 
+curl -X POST http://localhost:8000/api/logout/ \
+  -H "Authorization: Token YOUR_TOKEN_HERE"
+
+# Refresh token
+curl -X POST http://localhost:8000/api/token/refresh/ \
+  -H "Authorization: Token abc123" \
+  -H "Content-Type: application/json"
+
+# Test if token is active
+curl -H "Authorization: Token abc123" http://localhost:8000/api/teams/me/
+
+
+# Get current profile
+curl -H "Authorization: Token YOUR_TOKEN" http://localhost:8000/api/profile/
+
+# Update location
+curl -X PATCH -H "Authorization: Token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"location": "Cape Town"}' \
+  http://localhost:8000/api/profile/
+
+# Try invalid email
+curl -X PATCH -H "Authorization: Token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "invalid-email"}' \
+  http://localhost:8000/api/profile/
+
+
+# Password change
+curl -X POST -H "Authorization: Token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password": "old_pass", "new_password": "NewSecure123!", "confirm_password": "NewSecure123!"}' \
+  http://localhost:8000/api/change-password/
+
+# Mismatched passwords
+curl -X POST -H "Authorization: Token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password": "old_pass", "new_password": "NewSecure123!", "confirm_password": "Different123!"}' \
+  http://localhost:8000/api/change-password/
+
+# Upload photo
+curl -X POST -H "Authorization: Token YOUR_TOKEN" \
+  -F "image=@/path/to/photo.jpg" \
+  http://localhost:8000/api/photos/
+
+# List photos
+curl -H "Authorization: Token YOUR_TOKEN" http://localhost:8000/api/photos/
+
+# Delete photo
+curl -X DELETE -H "Authorization: Token YOUR_TOKEN" \
+  http://localhost:8000/api/photos/1/
+
+# Add YouTube video
+curl -X POST -H "Authorization: Token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"youtube_url": "https://youtu.be/example"}' \
+  http://localhost:8000/api/videos/
+
+# List videos
+curl -H "Authorization: Token YOUR_TOKEN" http://localhost:8000/api/videos/

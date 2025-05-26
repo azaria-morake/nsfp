@@ -2,10 +2,28 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from knox.models import AuthToken
-from .serializers import TeamRegistrationSerializer, UserSerializer
-from .models import Team
-from knox.settings import knox_settings
+from .serializers import (
+        TeamRegistrationSerializer, 
+        UserSerializer, 
+        TeamProfileSerializer, 
+        PasswordChangeSerializer, 
+        TeamPhotoSerializer, 
+        TeamVideoSerializer, 
+        StaffSerializer
+        )
 
+from .models import Team, TeamPhoto, TeamVideo, StaffMember
+from knox.settings import knox_settings
+from rest_framework.permissions import IsAuthenticated
+import logging
+# Initialize logger
+logger = logging.getLogger(__name__)
+# This module contains views for team registration, login, logout, and profile management.
+from rest_framework.parsers import MultiPartParser
+from rest_framework import serializers
+
+
+# Views for team registration, login, logout, and profile management
 
 class TeamRegistrationView(generics.GenericAPIView):
     serializer_class = TeamRegistrationSerializer
@@ -119,3 +137,109 @@ class ActiveSessionsView(generics.GenericAPIView):
             token_key__startswith=token_key
         ).delete()
         return Response({"message": "Session revoked"})
+
+class TeamProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = TeamProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        # Check for no changes
+        if not request.data:
+            return Response({"detail": "No changes detected"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return super().update(request, *args, **kwargs)
+
+class PasswordChangeView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordChangeSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        if not user.check_password(serializer.data['old_password']):
+            return Response({"old_password": "Incorrect password"}, status=400)
+        
+        user.set_password(serializer.data['new_password'])
+        user.save()
+        
+        # Create new token and delete old one
+        AuthToken.objects.filter(user=user).delete()
+        token = AuthToken.objects.create(user)
+        
+        return Response({
+            "detail": "Password updated successfully",
+            "token": token[1]
+        })
+
+class TeamPhotoListView(generics.ListCreateAPIView):
+    serializer_class = TeamPhotoSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser] 
+
+    def get_queryset(self):
+        return TeamPhoto.objects.filter(team=self.request.user)
+
+    def perform_create(self, serializer):
+        # Enforce 10 photo limit
+        if self.request.user.photos.count() >= 10:
+            raise serializers.ValidationError("Maximum 10 photos allowed per team")
+        serializer.save(team=self.request.user)
+
+class TeamPhotoDetailView(generics.DestroyAPIView):
+    queryset = TeamPhoto.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.team != self.request.user:
+            self.permission_denied(self.request)
+        return obj
+
+class TeamVideoListView(generics.ListCreateAPIView):
+    serializer_class = TeamVideoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TeamVideo.objects.filter(team=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(team=self.request.user)
+
+class TeamVideoDetailView(generics.DestroyAPIView):
+    queryset = TeamVideo.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.team != self.request.user:
+            self.permission_denied(self.request)
+        return obj
+    
+class StaffListView(generics.ListCreateAPIView):
+    serializer_class = StaffSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return StaffMember.objects.filter(team=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(team=self.request.user)
+
+class StaffDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StaffSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return StaffMember.objects.filter(team=self.request.user)
+    
+    def perform_update(self, serializer):
+        # Prevent username changes
+        if 'username' in serializer.validated_data:
+            if serializer.instance.username != serializer.validated_data['username']:
+                raise serializers.ValidationError({"username": "Username cannot be changed"})
+        serializer.save()

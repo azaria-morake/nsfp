@@ -140,3 +140,6 @@ REST_KNOX = {
     'UNAUTHENTICATED_USER': None,  # Do not allow unauthenticated users
 
 }
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'

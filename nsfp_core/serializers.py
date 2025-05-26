@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Team
+from .models import Team, TeamPhoto, TeamVideo, StaffMember
 from .utils import validate_username, validate_team_name, normalize_identifier
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -65,3 +65,60 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ['username', 'team_name', 'location']
+
+class TeamProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ['profile_picture', 'location', 'email']
+        extra_kwargs = {
+            'email': {'required': False},
+            'profile_picture': {'required': False}
+        }
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match")
+        validate_password(data['new_password'])
+        return data
+
+class TeamPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamPhoto
+        fields = ['id', 'image', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at']
+
+class TeamVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamVideo
+        fields = ['id', 'youtube_url', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class StaffSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StaffMember
+        fields = ['id', 'username', 'full_name', 'role', 'profile_picture']
+        read_only_fields = ['id']
+
+    def validate_username(self, value):
+        # Reuse team username validation
+        validate_username(value)
+        if StaffMember.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already exists")
+        return value
+
+    def validate_role(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Role cannot be empty")
+        return value
+
+    def create(self, validated_data):
+        return StaffMember.objects.create(
+            team=self.context['request'].user,
+            **validated_data
+        )
