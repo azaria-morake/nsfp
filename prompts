@@ -1,0 +1,33 @@
+Okay that was awesome. Now we need this:
+
+###### II. Squad Registration
+**Fields:**
+- Username (unique system wide, but this validation can include numeral, for example: CristianoRonaldo7 == helps players assign their positions/numbers to their usernames)
+- Full Name i.e First Name, Last Name (required but not unique)... Middle Name (can be null)
+- Date of Birth (DD/MM/YYYY; with boundary checks)
+- Citizenship (validated against known country list)
+- Position (the entered position will be checked against pre-defined standard football positions, but should include helper message)
+- Strong Foot (Left or Right only; validation enforced)
+- Jersey Number (must be unique within the same team)
+- Nickname (optional)
+- **Team Level**: Auto-calculated backend field based on DOB (e.g. U13, U15, U19, U21)
+- Profile Picture (Max 2MB)
+- Market Value (in ZAR; arbitrary sentiment-based)
+
+**Validation Examples:**
+- Rejection of unknown countries or non-standard positions
+- Invalid date formats (e.g. future dates, ages over 100)
+- Duplicate jersey numbers within the same team
+
+**Expected Backend Behavior:**
+- Auto-classify and return Team Level from DOB
+- All validated data stored under one team object (Team → Squad[])
+- Save triggers confirmation or inline validation feedback
+
+---
+#### 👟 Edit Squad:
+- Admin can:
+  - Query players by age range (returns filtered result) or team level
+  - Update all fields **except DOB**
+  - Delete player (with confirmation)
+- Save response: confirmation or reason for rejection

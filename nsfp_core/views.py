@@ -9,10 +9,14 @@ from .serializers import (
         PasswordChangeSerializer, 
         TeamPhotoSerializer, 
         TeamVideoSerializer, 
-        StaffSerializer
+        StaffSerializer,
+        SquadMemberSerializer
         )
 
-from .models import Team, TeamPhoto, TeamVideo, StaffMember
+from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember
+
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from knox.settings import knox_settings
 from rest_framework.permissions import IsAuthenticated
 import logging
@@ -227,8 +231,6 @@ class StaffListView(generics.ListCreateAPIView):
     def get_queryset(self):
         return StaffMember.objects.filter(team=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(team=self.request.user)
 
 class StaffDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StaffSerializer
@@ -240,6 +242,35 @@ class StaffDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         # Prevent username changes
         if 'username' in serializer.validated_data:
-            if serializer.instance.username != serializer.validated_data['username']:
+            current_user = StaffMember.objects.get(pk=serializer.instance.pk)
+            if serializer.validated_data['username'] != current_user.username:
                 raise serializers.ValidationError({"username": "Username cannot be changed"})
+        
+        serializer.save()
+
+class SquadMemberListView(generics.ListCreateAPIView):
+    serializer_class = SquadMemberSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['team_level', 'position']
+    search_fields = ['first_name', 'last_name']
+
+    def get_queryset(self):
+        return SquadMember.objects.filter(team=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(team=self.request.user)
+
+class SquadMemberDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SquadMemberSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return SquadMember.objects.filter(team=self.request.user)
+
+    def perform_update(self, serializer):
+        # Prevent DOB changes
+        if 'dob' in serializer.validated_data:
+            if serializer.validated_data['dob'] != serializer.instance.dob:
+                raise serializers.ValidationError({"dob": "Date of birth cannot be changed"})
         serializer.save()

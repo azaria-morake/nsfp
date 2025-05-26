@@ -157,7 +157,7 @@ class StaffMember(models.Model):
         blank=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']),
-            MaxValueValidator(2*1024*1024, message="Image size cannot exceed 2MB")
+            validate_image_size
         ]
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -168,3 +168,91 @@ class StaffMember(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.role})"
+
+
+# core/models.py
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+import pycountry
+from datetime import date
+
+class SquadMember(models.Model):
+    POSITION_CHOICES = [
+        ('GK', 'Goalkeeper'),
+        ('CB', 'Center Back'),
+        ('LB', 'Left Back'),
+        ('RB', 'Right Back'),
+        ('CDM', 'Defensive Midfielder'),
+        ('CM', 'Central Midfielder'),
+        ('CAM', 'Attacking Midfielder'),
+        ('LW', 'Left Winger'),
+        ('RW', 'Right Winger'),
+        ('ST', 'Striker'),
+    ]
+    
+    FOOT_CHOICES = [
+        ('L', 'Left'),
+        ('R', 'Right'),
+    ]
+
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='squad_members')
+    username = models.CharField(max_length=30, unique=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
+    dob = models.DateField()
+    citizenship = models.CharField(max_length=100)
+    position = models.CharField(max_length=3, choices=POSITION_CHOICES)
+    strong_foot = models.CharField(max_length=1, choices=FOOT_CHOICES)
+    jersey_number = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(99)]
+    )
+    nickname = models.CharField(max_length=50, blank=True, null=True)
+    team_level = models.CharField(max_length=3, editable=False)
+    profile_picture = models.ImageField(
+        upload_to='squad_profile_pictures/',
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']),
+            validate_image_size
+        ]
+    )
+    market_value = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('team', 'jersey_number')]
+        ordering = ['jersey_number']
+
+    def clean(self):
+        # Date validation
+        if self.dob > date.today():
+            raise ValidationError({'dob': 'Date of birth cannot be in the future'})
+        
+        # Citizenship validation
+        if not pycountry.countries.get(name=self.citizenship):
+            raise ValidationError({'citizenship': 'Invalid country name'})
+
+    def save(self, *args, **kwargs):
+        # Calculate team level
+        today = date.today()
+        cutoff_date = date(today.year, 1, 1)
+        age = cutoff_date.year - self.dob.year - (
+            (cutoff_date.month, cutoff_date.day) < (self.dob.month, self.dob.day)
+        )
+        
+        if age <= 13: self.team_level = 'U13'
+        elif age <= 15: self.team_level = 'U15'
+        elif age <= 19: self.team_level = 'U19'
+        elif age <= 21: self.team_level = 'U21'
+        else: self.team_level = 'SR'
+        
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.position})"

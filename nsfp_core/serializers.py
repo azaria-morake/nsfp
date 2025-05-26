@@ -1,9 +1,10 @@
 
 from rest_framework import serializers
-from .models import Team, TeamPhoto, TeamVideo, StaffMember
+from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember
 from .utils import validate_username, validate_team_name, normalize_identifier
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+import pycountry
 
 
 
@@ -104,6 +105,9 @@ class StaffSerializer(serializers.ModelSerializer):
         model = StaffMember
         fields = ['id', 'username', 'full_name', 'role', 'profile_picture']
         read_only_fields = ['id']
+        extra_kwargs = {
+            'profile_picture': {'required': False}
+        }
 
     def validate_username(self, value):
         # Reuse team username validation
@@ -118,7 +122,41 @@ class StaffSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        return StaffMember.objects.create(
-            team=self.context['request'].user,
-            **validated_data
-        )
+        # Get team from request context
+        team = self.context['request'].user
+        return StaffMember.objects.create(team=team, **validated_data)
+    
+    def update(self, instance, validated_data):
+        # Handle profile picture update
+        new_profile = validated_data.get('profile_picture')
+        if new_profile and instance.profile_picture:
+            # Delete old file before saving new one
+            instance.profile_picture.delete(save=False)
+        return super().update(instance, validated_data)
+
+class SquadMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SquadMember
+        exclude = ['team']
+        read_only_fields = ['team_level']
+        extra_kwargs = {
+            'dob': {'format': '%d/%m/%Y'}
+        }
+
+    def validate_username(self, value):
+        # System-wide uniqueness check
+        if (Team.objects.filter(username=value).exists() or
+            StaffMember.objects.filter(username=value).exists() or
+            SquadMember.objects.filter(username=value).exists()):
+            raise serializers.ValidationError("Username already exists")
+        return value
+
+    def validate_citizenship(self, value):
+        if not pycountry.countries.get(name=value):
+            raise serializers.ValidationError("Invalid country name")
+        return value
+
+    def validate_jersey_number(self, value):
+        if self.context['request'].user.squad_members.filter(jersey_number=value).exists():
+            raise serializers.ValidationError("Jersey number already taken in this team")
+        return value
