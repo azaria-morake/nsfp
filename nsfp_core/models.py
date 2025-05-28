@@ -5,20 +5,39 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import CITextField
 from .utils import validate_username, validate_team_name, normalize_identifier
-from django.core.validators import FileExtensionValidator, MaxValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 import os
-from .validators import validate_image_size
+from .validators import validate_image_size, validate_squad_username
 from django.dispatch import receiver
 from django.db.models.signals import post_delete, pre_save
+from django.db import models
+import pycountry
+from datetime import date
 
 
 def staff_profile_picture_path(instance, filename):
+    
+    """
+    Generates a file path for a staff member's profile picture.
+
+    Args:
+        instance: An instance of the StaffMember model.
+        filename: The name of the file to be saved.
+
+    Returns:
+        A string representing the file path where the staff member's 
+        profile picture will be stored, formatted as: 
+        "<team_name>/staff/<username>/<filename>".
+    """
+
     return f"{instance.team.team_name.replace(' ', '_')}/staff/{instance.username}/{filename}"
 
 
 def profile_picture_path(instance, filename):
     return f"{instance.team_name.replace(' ', '_')}/profile/{filename}"
 
+def player_picture_path(instance, filename):
+    return f"{instance.team.team_name.replace(' ', '_')}/squad/{instance.username}/{filename}"
 def team_photo_path(instance, filename):
     return f"{instance.team.team_name.replace(' ', '_')}/photos/{filename}"
 
@@ -170,12 +189,6 @@ class StaffMember(models.Model):
         return f"{self.full_name} ({self.role})"
 
 
-# core/models.py
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-import pycountry
-from datetime import date
-
 class SquadMember(models.Model):
     POSITION_CHOICES = [
         ('GK', 'Goalkeeper'),
@@ -196,7 +209,11 @@ class SquadMember(models.Model):
     ]
 
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='squad_members')
-    username = models.CharField(max_length=30, unique=True)
+    username = models.CharField(
+        max_length=30, 
+        unique=True,
+        validators=[validate_squad_username] 
+        )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
@@ -210,7 +227,7 @@ class SquadMember(models.Model):
     nickname = models.CharField(max_length=50, blank=True, null=True)
     team_level = models.CharField(max_length=3, editable=False)
     profile_picture = models.ImageField(
-        upload_to='squad_profile_pictures/',
+        upload_to=player_picture_path,
         blank=True,
         null=True,
         validators=[
@@ -231,6 +248,7 @@ class SquadMember(models.Model):
 
     def clean(self):
         # Date validation
+        print("Clean method called!")  # Debug line
         if self.dob > date.today():
             raise ValidationError({'dob': 'Date of birth cannot be in the future'})
         
@@ -256,3 +274,21 @@ class SquadMember(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.position})"
+    
+
+@receiver(pre_save, sender=SquadMember)
+def delete_old_squad_picture(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+
+    try:
+        old_instance = SquadMember.objects.get(pk=instance.pk)
+    except SquadMember.DoesNotExist:
+        return
+
+    old_file = old_instance.profile_picture
+    new_file = instance.profile_picture
+
+    if old_file and old_file != new_file:
+        if os.path.isfile(old_file.path):
+            os.remove(old_file.path)

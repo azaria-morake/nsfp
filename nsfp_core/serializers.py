@@ -143,8 +143,14 @@ class SquadMemberSerializer(serializers.ModelSerializer):
             'dob': {'format': '%d/%m/%Y'}
         }
 
+
     def validate_username(self, value):
-        # System-wide uniqueness check
+        
+        """System-wide uniqueness check with custom validation"""
+        # Use the model validator explicitly
+        from .validators import validate_squad_username
+        validate_squad_username(value)
+
         if (Team.objects.filter(username=value).exists() or
             StaffMember.objects.filter(username=value).exists() or
             SquadMember.objects.filter(username=value).exists()):
@@ -159,4 +165,10 @@ class SquadMemberSerializer(serializers.ModelSerializer):
     def validate_jersey_number(self, value):
         if self.context['request'].user.squad_members.filter(jersey_number=value).exists():
             raise serializers.ValidationError("Jersey number already taken in this team")
+        return value
+
+    def validate_dob(self, value):
+        from datetime import date
+        if value > date.today():
+            raise serializers.ValidationError("Date of birth cannot be in the future")
         return value

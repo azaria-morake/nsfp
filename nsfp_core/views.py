@@ -23,7 +23,7 @@ import logging
 # Initialize logger
 logger = logging.getLogger(__name__)
 # This module contains views for team registration, login, logout, and profile management.
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import serializers
 
 
@@ -264,7 +264,7 @@ class SquadMemberListView(generics.ListCreateAPIView):
 class SquadMemberDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SquadMemberSerializer
     permission_classes = [IsAuthenticated]
-
+    parser_classes = [MultiPartParser, FormParser]
     def get_queryset(self):
         return SquadMember.objects.filter(team=self.request.user)
 
