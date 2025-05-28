@@ -1,6 +1,7 @@
 # core/utils.py
 import re
 from django.core.exceptions import ValidationError
+from datetime import date
 
 SUFFIXES = {'fc', 'cf', 'club', 'team', 'sc', 'united', 'city', 'afc'}
 
@@ -48,3 +49,24 @@ def validate_username(name):
             "2. Contain only letters (no numbers/symbols)\n"
             "3. Example: 'Chelsea', 'KaizerChiefs'"
         )
+    
+
+
+
+def calculate_team_level(dob):
+    today = date.today()
+    cutoff_date = date(today.year, 1, 1)
+    age = cutoff_date.year - dob.year - (
+        (cutoff_date.month, cutoff_date.day) < (dob.month, dob.day)
+    )
+    
+    if age <= 13:
+        return 'U13'
+    elif age <= 15:
+        return 'U15'
+    elif age <= 19:
+        return 'U19'
+    elif age <= 21:
+        return 'U21'
+    else:
+        return 'SR'

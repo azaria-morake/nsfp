@@ -243,7 +243,12 @@ class SquadMember(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = [('team', 'jersey_number')]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['team', 'team_level', 'jersey_number'],
+                name='unique_jersey_per_team_level'
+            )
+        ]
         ordering = ['jersey_number']
 
     def clean(self):
@@ -257,19 +262,8 @@ class SquadMember(models.Model):
             raise ValidationError({'citizenship': 'Invalid country name'})
 
     def save(self, *args, **kwargs):
-        # Calculate team level
-        today = date.today()
-        cutoff_date = date(today.year, 1, 1)
-        age = cutoff_date.year - self.dob.year - (
-            (cutoff_date.month, cutoff_date.day) < (self.dob.month, self.dob.day)
-        )
-        
-        if age <= 13: self.team_level = 'U13'
-        elif age <= 15: self.team_level = 'U15'
-        elif age <= 19: self.team_level = 'U19'
-        elif age <= 21: self.team_level = 'U21'
-        else: self.team_level = 'SR'
-        
+        from .utils import calculate_team_level  # Avoid circular imports
+        self.team_level = calculate_team_level(self.dob)
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -162,13 +162,42 @@ class SquadMemberSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid country name")
         return value
 
-    def validate_jersey_number(self, value):
-        if self.context['request'].user.squad_members.filter(jersey_number=value).exists():
-            raise serializers.ValidationError("Jersey number already taken in this team")
-        return value
 
     def validate_dob(self, value):
         from datetime import date
         if value > date.today():
             raise serializers.ValidationError("Date of birth cannot be in the future")
         return value
+
+    
+    def validate(self, data):
+        # Calculate team level for validation
+        from .utils import calculate_team_level
+        
+        # For updates, use existing DOB if not provided in request
+        dob = data.get('dob', self.instance.dob if self.instance else None)
+        if not dob:
+            raise serializers.ValidationError({"dob": "Date of birth is required"})
+            
+        team_level = calculate_team_level(dob)
+        team = self.context['request'].user
+        
+        # Check jersey number uniqueness within team level
+        jersey_number = data.get('jersey_number')
+        if jersey_number is not None:
+            qs = SquadMember.objects.filter(
+                team=team,
+                team_level=team_level,
+                jersey_number=jersey_number
+            )
+            
+            # Exclude current instance during updates
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+                
+            if qs.exists():
+                raise serializers.ValidationError({
+                    "jersey_number": f"Jersey number {jersey_number} is already taken in {team_level} team level"
+                })
+        
+        return data
