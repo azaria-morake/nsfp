@@ -13,6 +13,7 @@ from django.db.models.signals import post_delete, pre_save
 from django.db import models
 import pycountry
 from datetime import date
+from django.conf import settings
 
 
 def staff_profile_picture_path(instance, filename):
@@ -286,3 +287,24 @@ def delete_old_squad_picture(sender, instance, **kwargs):
     if old_file and old_file != new_file:
         if os.path.isfile(old_file.path):
             os.remove(old_file.path)
+
+
+class TeamNeeds(models.Model):
+    team = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='needs_posts'
+    )
+    content = models.TextField(
+        max_length=2000,
+        help_text="Describe your team's needs (max 2000 characters)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Team Needs"
+
+    def __str__(self):
+        return f"Needs post by {self.team.team_name} ({self.created_at})"

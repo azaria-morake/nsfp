@@ -143,3 +143,8 @@ REST_KNOX = {
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+DATE_INPUT_FORMATS = [
+    '%d/%m/%Y',  # '25/10/2025'
+    '%Y-%m-%d',  # '2025-10-25'
+]

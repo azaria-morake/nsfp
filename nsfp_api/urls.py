@@ -15,8 +15,11 @@ from nsfp_core.views import (
     StaffListView,
     StaffDetailView,
     SquadMemberListView,
-    SquadMemberDetailView
-)
+    SquadMemberDetailView,
+    TeamNeedsListView,
+    TeamNeedsDetailView
+                          )
+
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -46,7 +49,9 @@ urlpatterns = [
     path('api/staff/', StaffListView.as_view(), name='staff-list'),
     path('api/staff/<int:pk>/', StaffDetailView.as_view(), name='staff-detail'),
     path('api/squad/', SquadMemberListView.as_view(), name='squad-list'),
-    path('api/squad/<int:pk>/', SquadMemberDetailView.as_view(), name='squad-detail'),    
+    path('api/squad/<int:pk>/', SquadMemberDetailView.as_view(), name='squad-detail'),
+    path('api/needs/', TeamNeedsListView.as_view(), name='team-needs-list'),
+    path('api/needs/<int:pk>/', TeamNeedsDetailView.as_view(), name='team-needs-detail'),   
                 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Serve media files in development
 
 # Note: In production, you should configure your web server to serve media files.

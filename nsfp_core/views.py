@@ -10,10 +10,11 @@ from .serializers import (
         TeamPhotoSerializer, 
         TeamVideoSerializer, 
         StaffSerializer,
-        SquadMemberSerializer
+        SquadMemberSerializer,
+        TeamNeedsSerializer
         )
 
-from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember
+from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember, TeamNeeds
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -274,3 +275,20 @@ class SquadMemberDetailView(generics.RetrieveUpdateDestroyAPIView):
             if serializer.validated_data['dob'] != serializer.instance.dob:
                 raise serializers.ValidationError({"dob": "Date of birth cannot be changed"})
         serializer.save()
+
+class TeamNeedsListView(generics.ListCreateAPIView):
+    serializer_class = TeamNeedsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TeamNeeds.objects.filter(team=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(team=self.request.user)
+
+class TeamNeedsDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TeamNeedsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TeamNeeds.objects.filter(team=self.request.user)

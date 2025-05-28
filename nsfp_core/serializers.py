@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember
+from .models import Team, TeamPhoto, TeamVideo, StaffMember, SquadMember, TeamNeeds
 from .utils import validate_username, validate_team_name, normalize_identifier
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -201,3 +201,15 @@ class SquadMemberSerializer(serializers.ModelSerializer):
                 })
         
         return data
+
+
+class TeamNeedsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamNeeds
+        fields = ['id', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_content(self, value):
+        if len(value) > 2000:
+            raise serializers.ValidationError("Content cannot exceed 2000 characters")
+        return value
