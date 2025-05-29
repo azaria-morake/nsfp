@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, re_path
+from django.views.generic import TemplateView
 from nsfp_core.views import (
     TeamRegistrationView,
     LoginView,
@@ -22,6 +23,7 @@ from nsfp_core.views import (
 
 from django.conf.urls.static import static
 from django.conf import settings
+import os
 
 """
 nsfp_api URL Configuration
@@ -51,7 +53,9 @@ urlpatterns = [
     path('api/squad/', SquadMemberListView.as_view(), name='squad-list'),
     path('api/squad/<int:pk>/', SquadMemberDetailView.as_view(), name='squad-detail'),
     path('api/needs/', TeamNeedsListView.as_view(), name='team-needs-list'),
-    path('api/needs/<int:pk>/', TeamNeedsDetailView.as_view(), name='team-needs-detail'),   
+    path('api/needs/<int:pk>/', TeamNeedsDetailView.as_view(), name='team-needs-detail'),
+        # Catch-all for React app
+    re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),   
                 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Serve media files in development
 
 # Note: In production, you should configure your web server to serve media files.
@@ -60,3 +64,7 @@ urlpatterns = [
 # It includes paths for team registration, login, logout, token refresh,
 # team detail, active sessions, profile management, and media management.
 #
+
+STATICFILES_DIRS = [
+    os.path.join(settings.BASE_DIR, 'nsfp_frontend/dist'),
+]
