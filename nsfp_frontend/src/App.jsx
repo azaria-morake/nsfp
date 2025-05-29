@@ -2,14 +2,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+//import HomePage from './pages/HomePage';
+//import LoginPage from './pages/LoginPage';
+//import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import SquadPage from './pages/SquadPage';
-import StaffPage from './pages/StaffPage';
-import NeedsPage from './pages/NeedsPage';
-import NotFoundPage from './pages/NotFoundPage';
+//import SquadPage from './pages/SquadPage';
+//import StaffPage from './pages/StaffPage';
+//import NeedsPage from './pages/NeedsPage';
+//import NotFoundPage from './pages/NotFoundPage';
 import AuthPage from './pages/AuthPage';
 
 function App() {
